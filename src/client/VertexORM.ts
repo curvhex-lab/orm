@@ -1,6 +1,6 @@
 import { Connection, PublicKey } from '@solana/web3.js';
 import { ModelDefinition } from '../core/types';
-import { VertexClient } from './ModelClient';
+import { VertexClient } from './VertexClient';
 
 type ModelMap = Record<string, ModelDefinition>;
 

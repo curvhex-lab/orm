@@ -1,6 +1,6 @@
 import { Connection, PublicKey } from '@solana/web3.js';
 import { defineModel } from '../core/schema';
-import { VertexClient } from '../client/ModelClient';
+import { VertexClient } from '../client/VertexClient';
 
 // SPL Token Account şeması (165 byte, sabit yapı)
 const TokenAccount = defineModel({
