@@ -1,4 +1,4 @@
-export { SolanaORM } from './orm';
+export { VertexORM } from './orm';
 export { defineModel } from './schema';
 export { ModelClient } from './client';
 export type { ModelDefinition, FieldDefinition, FieldType, InferModel } from './types';

@@ -4,12 +4,12 @@ import { ModelClient } from './client';
 
 type ModelMap = Record<string, ModelDefinition>;
 
-type OrmClient<T extends ModelMap> = {
+type VertexOrmClient<T extends ModelMap> = {
     [K in keyof T as Uncapitalize<string & K>]: ModelClient<T[K]>;
 };
 
-export class SolanaORM<T extends ModelMap> {
-    readonly models: OrmClient<T>;
+export class VertexORM<T extends ModelMap> {
+    readonly models: VertexOrmClient<T>;
 
     constructor(config: {
         connection: Connection;
