@@ -1,6 +1,6 @@
 import { Connection, PublicKey } from '@solana/web3.js';
-import { ModelDefinition } from './types';
-import { ModelClient } from './client';
+import { ModelDefinition } from '../core/types';
+import { ModelClient } from './ModelClient';
 
 type ModelMap = Record<string, ModelDefinition>;
 

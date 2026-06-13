@@ -1,5 +1,5 @@
-import { defineModel } from './schema';
-import { deserialize } from './deserializer';
+import { defineModel } from '../core/schema';
+import { deserialize } from '../core/deserializer';
 
 const UserAccount = defineModel({
     discriminator: [1, 2, 3, 4, 5, 6, 7, 8],

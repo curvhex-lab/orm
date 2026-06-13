@@ -1,7 +1,7 @@
 import { Connection, PublicKey, GetProgramAccountsFilter } from '@solana/web3.js';
-import { ModelDefinition, InferModel } from './types';
-import { WhereClause, buildFilters, applyClientFilters, RpcFilter } from './filters';
-import { deserialize } from './deserializer';
+import { ModelDefinition, InferModel } from '../core/types';
+import { WhereClause, buildFilters, applyClientFilters } from '../core/filters';
+import { deserialize } from '../core/deserializer';
 
 export interface FindManyOptions<M extends ModelDefinition> {
   where?: WhereClause<M>;
