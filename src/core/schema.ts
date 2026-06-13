@@ -1,5 +1,13 @@
 import type { FieldType, FieldDefinition, ModelDefinition } from "./types";
+import { createHash } from 'crypto';
 
+// Anchor discriminator: sha256("account:<ModelName>") → fist 8 byte
+export function anchor(name: string): number[] {
+    const hash = createHash('sha256')
+        .update(`account:${name}`)
+        .digest();
+    return Array.from(hash.slice(0, 8));
+}
 
 const FIELD_SIZES: Record<FieldType, number> = {
     u8: 1, i8: 1,
@@ -9,8 +17,8 @@ const FIELD_SIZES: Record<FieldType, number> = {
     u128: 16, i128: 16,
     bool: 1,
     publicKey: 32,
-    string: 0,   
-    bytes: 0,    
+    string: 0,
+    bytes: 0,
 };
 
 type FieldInput = { type: FieldType };
