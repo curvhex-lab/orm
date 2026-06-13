@@ -28,4 +28,4 @@ export type InferFieldType<T extends FieldType> =
 
 export type InferModel<M extends ModelDefinition> = {
     [K in keyof M['fields']]: InferFieldType<M['fields'][K]['type']>
-} & { address: string };  // her account'ın PDA adresi de olacak
+} & { address: string };
