@@ -7,6 +7,7 @@ export interface FindManyOptions<M extends ModelDefinition> {
     take?: number;
     skip?: number;
     dataSize?: number;
+    include?: Record<string, RelationDefinition>;
 }
 
 export interface AggregateOptions<M extends ModelDefinition> {
@@ -44,4 +45,9 @@ export interface QueryAdapter {
         model: M,
         seeds: (Buffer | Uint8Array)[]
     ): Promise<InferModel<M> | null>;
+}
+
+export interface RelationDefinition {
+    model: ModelDefinition;
+    foreignKey: string;   // field name at model (örn: vault.ownerPubkey)
 }

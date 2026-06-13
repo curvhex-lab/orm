@@ -74,5 +74,5 @@ export class RpcAdapter implements QueryAdapter {
         const accountInfo = await this.connection.getAccountInfo(pda);
         if (!accountInfo) return null;
         return deserialize(model, accountInfo.data as Buffer, pda.toBase58());
-    }
+    }    
 }

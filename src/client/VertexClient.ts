@@ -12,7 +12,41 @@ export class VertexClient<M extends ModelDefinition> {
   ) { }
 
   async findMany(options: FindManyOptions<M> = {}): Promise<InferModel<M>[]> {
-    return this.adapter.findMany(this.model, options);
+    const { include, ...rest } = options;
+    const results = await this.adapter.findMany(this.model, rest);
+
+    if (!include) return results;
+
+    for (const [relationName, relation] of Object.entries(include)) {
+      // İlgili field'daki tüm adresleri topla (tekrar edenleri de)
+      const addresses = [
+        ...new Set(
+          results
+            .map(r => (r as any)[relation.foreignKey] as string)
+            .filter(Boolean)
+        )
+      ];
+
+      // Hepsini paralel fetch et
+      const related = await Promise.all(
+        addresses.map(addr => this.adapter.findByAddress(relation.model, addr))
+      );
+
+      // address → record map'i oluştur
+      const relatedMap = new Map(
+        related
+          .filter(Boolean)
+          .map(r => [r!.address, r])
+      );
+
+      // Her result'a ilişkiyi ekle
+      for (const record of results) {
+        const addr = (record as any)[relation.foreignKey];
+        (record as any)[relationName] = relatedMap.get(addr) ?? null;
+      }
+    }
+
+    return results;
   }
 
   async findFirst(options: { where?: WhereClause<M> } = {}): Promise<InferModel<M> | null> {
