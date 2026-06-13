@@ -5,26 +5,35 @@ import { deserialize } from '../core/deserializer';
 
 export interface FindManyOptions<M extends ModelDefinition> {
   where?: WhereClause<M>;
-  orderBy?: { [K in keyof M['fields']]?: 'asc' | 'desc'};
+  orderBy?: { [K in keyof M['fields']]?: 'asc' | 'desc' };
   take?: number;
   skip?: number;
+  dataSize?: number;
 }
 
 export interface FindFirstOptions<M extends ModelDefinition> {
   where?: WhereClause<M>;
 }
 
-export class ModelClient<M extends ModelDefinition> {
+export class VertexClient<M extends ModelDefinition> {
+
+  private _programId: PublicKey;
+
   constructor(
     private connection: Connection,
-    private programId: PublicKey,
+    private programId: PublicKey | string,
     private model: M,
-  ) { }
+  ) {
+    this._programId = typeof programId === 'string'
+      ? new PublicKey(programId)
+      : programId;
+  }
 
   async findMany(options: FindManyOptions<M> = {}): Promise<InferModel<M>[]> {
-    const { where = {}, orderBy, take, skip = 0 } = options;
+    const { where = {}, orderBy, take, skip = 0, dataSize } = options;
 
     const { rpcFilters, clientFilters } = buildFilters(this.model, where);
+
 
     const rpcParams: GetProgramAccountsFilter[] = rpcFilters.map(f => {
       if ('memcmp' in f) {
@@ -39,7 +48,11 @@ export class ModelClient<M extends ModelDefinition> {
       return { dataSize: (f as any).dataSize };
     });
 
-    const accounts = await this.connection.getProgramAccounts(this.programId, {
+    if (options.dataSize) {
+      rpcParams.push({ dataSize: options.dataSize });
+    }
+
+    const accounts = await this.connection.getProgramAccounts(this._programId, {
       filters: rpcParams,
     });
 
@@ -79,7 +92,7 @@ export class ModelClient<M extends ModelDefinition> {
   }
 
   async findByPda(seeds: (Buffer | Uint8Array)[]): Promise<InferModel<M> | null> {
-    const [pda] = PublicKey.findProgramAddressSync(seeds, this.programId);
+    const [pda] = PublicKey.findProgramAddressSync(seeds, this._programId);
 
     const accountInfo = await this.connection.getAccountInfo(pda);
     if (!accountInfo) return null;
@@ -133,4 +146,12 @@ export class ModelClient<M extends ModelDefinition> {
 
     return result;
   }
+
+  async findByAddress(address: string): Promise<InferModel<M> | null> {
+    const pubkey = new PublicKey(address);
+    const accountInfo = await this.connection.getAccountInfo(pubkey);
+    if (!accountInfo) return null;
+    return deserialize(this.model, accountInfo.data as Buffer, address);
+  }
+
 }

@@ -68,12 +68,14 @@ export function buildFilters<M extends ModelDefinition>(
     const rpcFilters: RpcFilter[] = [];
     const clientFilters: ClientFilter[] = [];
 
-    rpcFilters.push({
-        memcmp: {
-            offset: 0,
-            bytes: Buffer.from(model.discriminator).toString('base64'),
-        }
-    });
+    if (model.discriminator.length > 0) {
+        rpcFilters.push({
+            memcmp: {
+                offset: 0,
+                bytes: Buffer.from(model.discriminator).toString('base64'),
+            }
+        });
+    }
 
     for (const [fieldName, condition] of Object.entries(where)) {
         const fieldDef = model.fields[fieldName];

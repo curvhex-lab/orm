@@ -1,11 +1,11 @@
 import { Connection, PublicKey } from '@solana/web3.js';
 import { ModelDefinition } from '../core/types';
-import { ModelClient } from './ModelClient';
+import { VertexClient } from './ModelClient';
 
 type ModelMap = Record<string, ModelDefinition>;
 
 type VertexOrmClient<T extends ModelMap> = {
-    [K in keyof T as Uncapitalize<string & K>]: ModelClient<T[K]>;
+    [K in keyof T as Uncapitalize<string & K>]: VertexClient<T[K]>;
 };
 
 export class VertexORM<T extends ModelMap> {
@@ -21,7 +21,7 @@ export class VertexORM<T extends ModelMap> {
 
         for (const [name, model] of Object.entries(config.models)) {
             const key = name.charAt(0).toLowerCase() + name.slice(1);
-            models[key] = new ModelClient(config.connection, programId, model);
+            models[key] = new VertexClient(config.connection, programId, model);
         }
 
         this.models = models;
