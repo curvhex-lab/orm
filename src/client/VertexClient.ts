@@ -1,157 +1,109 @@
-import { Connection, PublicKey, GetProgramAccountsFilter } from '@solana/web3.js';
+import { PublicKey } from '@solana/web3.js';
 import { ModelDefinition, InferModel } from '../core/types';
-import { WhereClause, buildFilters, applyClientFilters } from '../core/filters';
-import { deserialize } from '../core/deserializer';
+import { WhereClause } from '../core/filters';
+import { QueryAdapter, FindManyOptions, AggregateOptions, GroupByOptions } from '../adapters/abstract/QueryAdapter';
 
-export interface FindManyOptions<M extends ModelDefinition> {
-  where?: WhereClause<M>;
-  orderBy?: { [K in keyof M['fields']]?: 'asc' | 'desc' };
-  take?: number;
-  skip?: number;
-  dataSize?: number;
-}
-
-export interface FindFirstOptions<M extends ModelDefinition> {
-  where?: WhereClause<M>;
-}
+export type { FindManyOptions };
 
 export class VertexClient<M extends ModelDefinition> {
-
-  private _programId: PublicKey;
-
   constructor(
-    private connection: Connection,
-    private programId: PublicKey | string,
+    private adapter: QueryAdapter,
     private model: M,
-  ) {
-    this._programId = typeof programId === 'string'
-      ? new PublicKey(programId)
-      : programId;
-  }
+  ) { }
 
   async findMany(options: FindManyOptions<M> = {}): Promise<InferModel<M>[]> {
-    const { where = {}, orderBy, take, skip = 0, dataSize } = options;
-
-    const { rpcFilters, clientFilters } = buildFilters(this.model, where);
-
-
-    const rpcParams: GetProgramAccountsFilter[] = rpcFilters.map(f => {
-      if ('memcmp' in f) {
-        return {
-          memcmp: {
-            offset: f.memcmp.offset,
-            bytes: f.memcmp.bytes,
-            encoding: 'base64' as const,
-          }
-        };
-      }
-      return { dataSize: (f as any).dataSize };
-    });
-
-    if (options.dataSize) {
-      rpcParams.push({ dataSize: options.dataSize });
-    }
-
-    const accounts = await this.connection.getProgramAccounts(this._programId, {
-      filters: rpcParams,
-    });
-
-    let results = accounts.map(({ pubkey, account }) =>
-      deserialize(this.model, account.data as Buffer, pubkey.toBase58())
-    );
-
-    if (clientFilters.length > 0) {
-      results = applyClientFilters(results, clientFilters);
-    }
-
-    // Sıralama
-    if (orderBy) {
-      const entry = Object.entries(orderBy)[0];
-      if (entry) {
-        const [field, direction] = entry;
-        results.sort((a, b) => {
-          const aVal = a[field];
-          const bVal = b[field];
-          if (aVal === undefined || bVal === undefined) return 0;
-          if (aVal < bVal) return direction === 'asc' ? -1 : 1;
-          if (aVal > bVal) return direction === 'asc' ? 1 : -1;
-          return 0;
-        });
-      }
-    }
-
-    // Pagination
-    const paginated = results.slice(skip, take !== undefined ? skip + take : undefined);
-
-    return paginated;
+    return this.adapter.findMany(this.model, options);
   }
 
-  async findFirst(options: FindFirstOptions<M> = {}): Promise<InferModel<M> | null> {
-    const results = await this.findMany({ where: options.where ?? {}, take: 1 });
+  async findFirst(options: { where?: WhereClause<M> } = {}): Promise<InferModel<M> | null> {
+    const results = await this.adapter.findMany(this.model, { where: options.where ?? {}, take: 1 });
     return results[0] ?? null;
   }
 
+  async findByAddress(address: string): Promise<InferModel<M> | null> {
+    return this.adapter.findByAddress(this.model, address);
+  }
+
   async findByPda(seeds: (Buffer | Uint8Array)[]): Promise<InferModel<M> | null> {
-    const [pda] = PublicKey.findProgramAddressSync(seeds, this._programId);
-
-    const accountInfo = await this.connection.getAccountInfo(pda);
-    if (!accountInfo) return null;
-
-    return deserialize(this.model, accountInfo.data as Buffer, pda.toBase58());
+    return this.adapter.findByPda(this.model, seeds);
   }
 
   async count(where: WhereClause<M> = {}): Promise<number> {
-    const results = await this.findMany({ where });
+    const results = await this.adapter.findMany(this.model, { where });
     return results.length;
   }
 
-  async aggregate(options: {
-    where?: WhereClause<M>;
-    _count?: boolean;
-    _sum?: { [K in keyof M['fields']]?: boolean };
-    _avg?: { [K in keyof M['fields']]?: boolean };
-    _min?: { [K in keyof M['fields']]?: boolean };
-    _max?: { [K in keyof M['fields']]?: boolean };
-  }) {
-    const records = await this.findMany({ where: options.where ?? {} });
+  async aggregate(options: AggregateOptions<M>): Promise<Record<string, any>> {
+    const records = await this.adapter.findMany(this.model, { where: options.where ?? {} });
+    return computeAggregate(records, options);
+  }
 
+  async groupBy(options: GroupByOptions<M>): Promise<Record<string, any>[]> {
+    const records = await this.adapter.findMany(this.model, { where: options.where ?? {} });
+    return computeGroupBy(records, options);
+  }
+}
+
+function computeAggregate<M extends ModelDefinition>(
+  records: InferModel<M>[],
+  options: AggregateOptions<M>
+): Record<string, any> {
+  const result: Record<string, any> = {};
+
+  if (options._count) result._count = records.length;
+
+  for (const op of ['_sum', '_avg', '_min', '_max'] as const) {
+    const fields = options[op];
+    if (!fields) continue;
+    result[op] = {};
+    for (const [field, enabled] of Object.entries(fields)) {
+      if (!enabled) continue;
+      const values = records.map((r: any) => r[field]).filter((v: any) => v !== undefined);
+      if (op === '_sum') result[op][field] = values.reduce((a: any, b: any) => a + b, 0n);
+      else if (op === '_avg') result[op][field] = values.reduce((a: any, b: any) => a + b, 0n) / BigInt(values.length);
+      else if (op === '_min') result[op][field] = values.reduce((a: any, b: any) => a < b ? a : b);
+      else if (op === '_max') result[op][field] = values.reduce((a: any, b: any) => a > b ? a : b);
+    }
+  }
+
+  return result;
+}
+
+function computeGroupBy<M extends ModelDefinition>(
+  records: InferModel<M>[],
+  options: GroupByOptions<M>
+): Record<string, any>[] {
+  const groups = new Map<string, InferModel<M>[]>();
+
+  for (const record of records) {
+    const key = options.by.map(f => String((record as any)[f])).join('::');
+    if (!groups.has(key)) groups.set(key, []);
+    groups.get(key)!.push(record);
+  }
+
+  return Array.from(groups.entries()).map(([, groupRecords]) => {
     const result: Record<string, any> = {};
 
-    if (options._count) {
-      result._count = records.length;
+    for (const field of options.by) {
+      result[field as string] = (groupRecords[0] as any)[field];
     }
+
+    if (options._count) result._count = groupRecords.length;
 
     for (const op of ['_sum', '_avg', '_min', '_max'] as const) {
       const fields = options[op];
       if (!fields) continue;
-
       result[op] = {};
       for (const [field, enabled] of Object.entries(fields)) {
         if (!enabled) continue;
-
-        const values = records.map(r => r[field]).filter(v => v !== undefined);
-
-        if (op === '_sum') {
-          result[op][field] = values.reduce((a: any, b: any) => a + b, 0n);
-        } else if (op === '_avg') {
-          const sum = values.reduce((a: any, b: any) => a + b, 0n);
-          result[op][field] = sum / BigInt(values.length);
-        } else if (op === '_min') {
-          result[op][field] = values.reduce((a: any, b: any) => a < b ? a : b);
-        } else if (op === '_max') {
-          result[op][field] = values.reduce((a: any, b: any) => a > b ? a : b);
-        }
+        const values = groupRecords.map((r: any) => r[field]).filter((v: any) => v !== undefined);
+        if (op === '_sum') result[op][field] = values.reduce((a: any, b: any) => a + b, 0n);
+        else if (op === '_avg') result[op][field] = values.reduce((a: any, b: any) => a + b, 0n) / BigInt(values.length);
+        else if (op === '_min') result[op][field] = values.reduce((a: any, b: any) => a < b ? a : b);
+        else if (op === '_max') result[op][field] = values.reduce((a: any, b: any) => a > b ? a : b);
       }
     }
 
     return result;
-  }
-
-  async findByAddress(address: string): Promise<InferModel<M> | null> {
-    const pubkey = new PublicKey(address);
-    const accountInfo = await this.connection.getAccountInfo(pubkey);
-    if (!accountInfo) return null;
-    return deserialize(this.model, accountInfo.data as Buffer, address);
-  }
-
+  });
 }

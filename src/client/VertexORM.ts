@@ -1,5 +1,7 @@
 import { Connection, PublicKey } from '@solana/web3.js';
 import { ModelDefinition } from '../core/types';
+import { QueryAdapter } from '../adapters/abstract/QueryAdapter';
+import { RpcAdapter } from '../adapters/RpcAdapter';
 import { VertexClient } from './VertexClient';
 
 type ModelMap = Record<string, ModelDefinition>;
@@ -15,13 +17,15 @@ export class VertexORM<T extends ModelMap> {
         connection: Connection;
         programId: string;
         models: T;
+        adapter?: QueryAdapter;
     }) {
         const programId = new PublicKey(config.programId);
+        const adapter = config.adapter ?? new RpcAdapter(config.connection, programId);
         const models = {} as any;
 
         for (const [name, model] of Object.entries(config.models)) {
             const key = name.charAt(0).toLowerCase() + name.slice(1);
-            models[key] = new VertexClient(config.connection, programId, model);
+            models[key] = new VertexClient(adapter, model);
         }
 
         this.models = models;

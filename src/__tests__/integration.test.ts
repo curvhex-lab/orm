@@ -1,44 +1,79 @@
 import { Connection, PublicKey } from '@solana/web3.js';
 import { defineModel } from '../core/schema';
-import { VertexClient } from '../client/VertexClient';
+import { VertexORM } from '../client/VertexORM';
+import { RpcAdapter } from '../adapters/RpcAdapter';
 
-// SPL Token Account şeması (165 byte, sabit yapı)
 const TokenAccount = defineModel({
-    discriminator: [],  // SPL Token native program — discriminator yok
+    discriminator: [],
     fields: {
-        mint: { type: 'publicKey' },  // offset 0:  hangi token
-        owner: { type: 'publicKey' },  // offset 32: kim sahip
-        amount: { type: 'u64' },        // offset 64: bakiye
-        delegateOption: { type: 'u32' },        // offset 72: 0=None, 1=Some
+        mint: { type: 'publicKey' },  // offset 0
+        owner: { type: 'publicKey' },  // offset 32
+        amount: { type: 'u64' },        // offset 64
+        delegateOption: { type: 'u32' },        // offset 72
         delegate: { type: 'publicKey' },  // offset 76
-        state: { type: 'u8' },         // offset 108: 1=initialized
+        state: { type: 'u8' },         // offset 108
         isNativeOption: { type: 'u32' },        // offset 109
         isNative: { type: 'u64' },        // offset 113
         delegatedAmount: { type: 'u64' },        // offset 121
-        closeAuthorityOption: { type: 'u32' },     // offset 129
+        closeAuthorityOption: { type: 'u32' },        // offset 129
         closeAuthority: { type: 'publicKey' },  // offset 133
     }
 });
 
+const TOKEN_PROGRAM_ID = 'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA';
+const TOKEN_ACCOUNT_ADDR = 'CJkhvuce2SeEAQUTBeS3xwjWwCLJSC4czFTvN7okj59H';
+
 async function main() {
     const connection = new Connection('https://api.devnet.solana.com', 'confirmed');
 
-    const TOKEN_PROGRAM_ID = 'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA';
-    const TOKEN_ACCOUNT_ADDRESS = 'CJkhvuce2SeEAQUTBeS3xwjWwCLJSC4czFTvN7okj59H';
+    // RpcAdapter'ı açıkça geçiyoruz — ileride HeliusAdapter veya PostgresAdapter ile değişecek
+    const adapter = new RpcAdapter(connection, new PublicKey(TOKEN_PROGRAM_ID));
 
-    const client = new VertexClient(connection, TOKEN_PROGRAM_ID, TokenAccount);
+    const orm = new VertexORM({
+        connection,
+        programId: TOKEN_PROGRAM_ID,
+        adapter,
+        models: { TokenAccount },
+    });
 
-    console.log('Token account okunuyor...');
-
-    const account = await client.findByAddress(TOKEN_ACCOUNT_ADDRESS);
-
-    console.log('Sonuç:', {
+    console.log('─── findByAddress ───────────────────────────────');
+    const account = await orm.models.tokenAccount.findByAddress(TOKEN_ACCOUNT_ADDR);
+    console.log({
         address: account?.address,
         mint: account?.mint,
         owner: account?.owner,
         amount: account?.amount,
         state: account?.state,
     });
+
+    console.log('\n─── aggregate ───────────────────────────────────');
+    // Tek account üzerinde aggregate — adapter pattern çalışıyor mu doğrula
+    const fakeRecords = [
+        { address: 'a1', mint: 'x', owner: 'y', amount: 500n, state: 1 },
+        { address: 'a2', mint: 'x', owner: 'z', amount: 300n, state: 1 },
+        { address: 'a3', mint: 'x', owner: 'y', amount: 200n, state: 0 },
+    ];
+
+    console.log('\n─── groupBy (owner bazında) ─────────────────────');
+    const { VertexClient } = await import('../client/VertexClient.js');
+
+    const mockAdapter = {
+        findMany: async () => fakeRecords as any,
+        findByAddress: async () => null,
+        findByPda: async () => null,
+    };
+
+    const mockClient = new VertexClient(mockAdapter, TokenAccount);
+
+    const grouped = await mockClient.groupBy({
+        by: ['owner'],
+        _count: true,
+        _sum: { amount: true },
+    });
+
+    console.log('groupBy sonucu:', JSON.stringify(grouped, (_, v) =>
+        typeof v === 'bigint' ? v.toString() : v, 2
+    ));
 }
 
 main().catch(console.error);
