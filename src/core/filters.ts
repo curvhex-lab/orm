@@ -85,7 +85,8 @@ export function buildFilters<M extends ModelDefinition>(
             ? condition
             : (condition as any)?.eq;
 
-        if (eqValue !== undefined) {
+        // offset === -1 means field comes after a variable-length field — must filter client-side
+        if (eqValue !== undefined && fieldDef.offset !== -1) {
             const encoded = encodeValue(fieldDef.type, eqValue);
             rpcFilters.push({
                 memcmp: {
@@ -96,7 +97,7 @@ export function buildFilters<M extends ModelDefinition>(
             continue;
         }
 
-        clientFilters.push({ fieldName, fieldDef, condition: condition as any });
+        clientFilters.push({ fieldName, fieldDef, condition: isDirectValue(condition) ? { eq: condition } : condition as any });
     }
 
     return { rpcFilters, clientFilters };
@@ -105,7 +106,7 @@ export function buildFilters<M extends ModelDefinition>(
 export interface ClientFilter {
     fieldName: string;
     fieldDef: { type: FieldType; offset: number };
-    condition: { gt?: any; gte?: any; lt?: any; lte?: any; in?: any[]; between?: [any, any]; not?: any };
+    condition: { eq?: any; gt?: any; gte?: any; lt?: any; lte?: any; in?: any[]; between?: [any, any]; not?: any };
 }
 
 export function applyClientFilters<T extends Record<string, any>>(
@@ -116,6 +117,7 @@ export function applyClientFilters<T extends Record<string, any>>(
         clientFilters.every(({ fieldName, condition }) => {
             const val = record[fieldName];
 
+            if (condition.eq !== undefined && val !== condition.eq) return false;
             if (condition.gt !== undefined && !(val > condition.gt)) return false;
             if (condition.gte !== undefined && !(val >= condition.gte)) return false;
             if (condition.lt !== undefined && !(val < condition.lt)) return false;

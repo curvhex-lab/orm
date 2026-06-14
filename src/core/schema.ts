@@ -30,21 +30,19 @@ type ModelInput = {
 export function defineModel<T extends ModelInput>(input: T): ModelDefinition {
     const fields: Record<string, FieldDefinition> = {};
     let offset = input.discriminator.length;
+    let dynamicOffset = false; // true after first variable-length field
 
     for (const [name, field] of Object.entries(input.fields)) {
         const baseSize = FIELD_SIZES[field.type];
 
-        fields[name] = { type: field.type, offset, maxLen: field.maxLen };
+        // -1 signals "offset unknown at compile time — must filter client-side"
+        fields[name] = { type: field.type, offset: dynamicOffset ? -1 : offset, maxLen: field.maxLen };
 
         if (baseSize === 0) {
-            // variable-length: 4-byte length prefix + maxLen payload
-            if (field.maxLen === undefined) {
-                throw new Error(
-                    `Field "${name}" is type "${field.type}" — provide maxLen so offsets can be calculated correctly.`
-                );
-            }
-            offset += 4 + field.maxLen;
-        } else {
+            // string/bytes: actual on-chain size is dynamic, all subsequent offsets are unknown
+            dynamicOffset = true;
+            offset = -1;
+        } else if (!dynamicOffset) {
             offset += baseSize;
         }
     }
