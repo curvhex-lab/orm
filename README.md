@@ -19,16 +19,16 @@
 
 ```typescript
 const users = await orm.models.userAccount.findMany({
-  where:   { authority: wallet.publicKey, isActive: true },
-  orderBy: { balance: 'desc' },
-  take:    10,
-})
+  where: { authority: wallet.publicKey, isActive: true },
+  orderBy: { balance: "desc" },
+  take: 10,
+});
 ```
 
 ## Installation
 
 ```bash
-npm install @curvhex/orm
+npm install @curvhex/orm @solana/web3.js
 ```
 
 ## Documentation
