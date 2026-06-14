@@ -1,6 +1,6 @@
 {
   "name": "@curvhex/orm",
-  "version": "0.1.2",
+  "version": "0.1.4",
   "description": "TypeScript ORM for Solana PDA accounts",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
