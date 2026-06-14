@@ -1,5 +1,5 @@
 {
-  "name": "curvhex-orm",
+  "name": "@curvhex/orm",
   "version": "0.1.0",
   "description": "TypeScript ORM for Solana PDA accounts",
   "main": "dist/index.js",
@@ -7,6 +7,9 @@
   "files": [
     "dist"
   ],
+  "publishConfig": {
+    "access": "public"
+  },
   "scripts": {
     "build": "tsc",
     "prepublishOnly": "npm run build"
@@ -18,7 +21,7 @@
     "web3",
     "blockchain"
   ],
-  "license": "MIT",
+  "license": "Apache-2.0",
   "dependencies": {
     "@solana/web3.js": "^1.98.0"
   },
