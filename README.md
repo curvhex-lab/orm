@@ -33,7 +33,7 @@ npm install @curvhex/orm @solana/web3.js
 
 ## Documentation
 
-Full documentation at **[curvhex-labs.github.io/orm](https://curvhex-labs.github.io/orm/)**.
+Full documentation at **[curvhex-labs.github.io/orm](https://curvhex-lab.github.io/orm/)**.
 
 ## License
 
