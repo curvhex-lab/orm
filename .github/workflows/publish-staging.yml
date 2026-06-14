@@ -1,0 +1,36 @@
+name: Publish Staging
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'src/**'
+      - 'package.json'
+      - 'tsconfig.json'
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          registry-url: https://registry.npmjs.org
+
+      - run: npm ci
+
+      - run: npm run build
+
+      - name: Set staging version
+        run: |
+          CURRENT=$(node -p "require('./package.json').version")
+          STAGING="${CURRENT}-next.${{ github.run_number }}"
+          npm version $STAGING --no-git-tag-version
+          echo "Publishing $STAGING"
+
+      - name: Publish @next
+        run: npm publish --tag next
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

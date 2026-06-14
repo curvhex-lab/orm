@@ -10,8 +10,8 @@
 </p>
 
 <p align="center">
-  <a href="https://vertext-labs.github.io/orm/">Documentation</a> ·
-  <a href="https://vertext-labs.github.io/orm/guide/quick-start">Quick Start</a> ·
+  <a href="https://curvhex-lab.github.io/orm/">Documentation</a> ·
+  <a href="https://curvhex-lab.github.io/orm/guide/quick-start">Quick Start</a> ·
   <a href="https://www.npmjs.com/package/@curvhex/orm">npm</a>
 </p>
 
@@ -33,7 +33,7 @@ npm install @curvhex/orm @solana/web3.js
 
 ## Documentation
 
-Full documentation at **[vertext-labs.github.io/orm](https://vertext-labs.github.io/orm/)**.
+Full documentation at **[curvhex-labs.github.io/orm](https://curvhex-labs.github.io/orm/)**.
 
 ## License
 
