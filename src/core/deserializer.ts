@@ -7,65 +7,85 @@ export function deserialize<M extends ModelDefinition>(
 ): InferModel<M> {
     const result: Record<string, unknown> = { address };
 
+    // Track the real runtime offset for fields that come after variable-length fields
+    let runtimeOffset = -1;
+
     for (const [name, field] of Object.entries(model.fields)) {
-        const { type, offset } = field;
+        const { type } = field;
+        // Use runtime offset if we've passed a variable-length field, otherwise use schema offset
+        const offset = runtimeOffset !== -1 ? runtimeOffset : field.offset;
 
         switch (type) {
             case 'u8':
                 result[name] = data.readUInt8(offset);
+                if (runtimeOffset !== -1) runtimeOffset += 1;
                 break;
 
             case 'u16':
                 result[name] = data.readUInt16LE(offset);
+                if (runtimeOffset !== -1) runtimeOffset += 2;
                 break;
 
             case 'u32':
                 result[name] = data.readUInt32LE(offset);
+                if (runtimeOffset !== -1) runtimeOffset += 4;
                 break;
 
             case 'u64':
                 result[name] = data.readBigUInt64LE(offset);
+                if (runtimeOffset !== -1) runtimeOffset += 8;
                 break;
 
-            case 'u128':
+            case 'u128': {
                 const lo = data.readBigUInt64LE(offset);
                 const hi = data.readBigUInt64LE(offset + 8);
                 result[name] = (hi << 64n) | lo;
+                if (runtimeOffset !== -1) runtimeOffset += 16;
                 break;
+            }
 
             case 'i8':
                 result[name] = data.readInt8(offset);
+                if (runtimeOffset !== -1) runtimeOffset += 1;
                 break;
 
             case 'i16':
                 result[name] = data.readInt16LE(offset);
+                if (runtimeOffset !== -1) runtimeOffset += 2;
                 break;
 
             case 'i32':
                 result[name] = data.readInt32LE(offset);
+                if (runtimeOffset !== -1) runtimeOffset += 4;
                 break;
 
             case 'i64':
                 result[name] = data.readBigInt64LE(offset);
+                if (runtimeOffset !== -1) runtimeOffset += 8;
                 break;
 
             case 'bool':
                 result[name] = data.readUInt8(offset) === 1;
+                if (runtimeOffset !== -1) runtimeOffset += 1;
                 break;
 
             case 'publicKey':
                 result[name] = base58Encode(data.slice(offset, offset + 32));
+                if (runtimeOffset !== -1) runtimeOffset += 32;
                 break;
 
             case 'string': {
                 const len = data.readUInt32LE(offset);
                 result[name] = data.slice(offset + 4, offset + 4 + len).toString('utf8');
+                // Switch to runtime tracking after this variable-length field
+                runtimeOffset = offset + 4 + len;
                 break;
             }
 
             case 'bytes': {
                 const len = data.readUInt32LE(offset);
                 result[name] = data.slice(offset + 4, offset + 4 + len).toString('hex');
+                runtimeOffset = offset + 4 + len;
                 break;
             }
         }
