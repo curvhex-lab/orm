@@ -2,15 +2,15 @@ import { Connection, PublicKey } from '@solana/web3.js';
 import { ModelDefinition } from '../core/types';
 import { QueryAdapter } from '../adapters/abstract/QueryAdapter';
 import { RpcAdapter } from '../adapters/RpcAdapter';
-import { VertexClient } from './VertexClient';
+import { CurvhexClient } from './CurvhexClient';
 
 type ModelMap = Record<string, ModelDefinition>;
 
 type VertexOrmClient<T extends ModelMap> = {
-    [K in keyof T as Uncapitalize<string & K>]: VertexClient<T[K]>;
+    [K in keyof T as Uncapitalize<string & K>]: CurvhexClient<T[K]>;
 };
 
-export class VertexORM<T extends ModelMap> {
+export class CurvhexORM<T extends ModelMap> {
     readonly models: VertexOrmClient<T>;
 
     constructor(config: {
@@ -25,7 +25,7 @@ export class VertexORM<T extends ModelMap> {
 
         for (const [name, model] of Object.entries(config.models)) {
             const key = name.charAt(0).toLowerCase() + name.slice(1);
-            models[key] = new VertexClient(adapter, model);
+            models[key] = new CurvhexClient(adapter, model);
         }
 
         this.models = models;

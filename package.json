@@ -1,5 +1,5 @@
 {
-  "name": "vertex-orm",
+  "name": "curvhex-orm",
   "version": "0.1.0",
   "description": "TypeScript ORM for Solana PDA accounts",
   "main": "dist/index.js",

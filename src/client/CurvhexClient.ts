@@ -5,7 +5,7 @@ import { QueryAdapter, FindManyOptions, AggregateOptions, GroupByOptions } from 
 
 export type { FindManyOptions };
 
-export class VertexClient<M extends ModelDefinition> {
+export class CurvhexClient<M extends ModelDefinition> {
   constructor(
     private adapter: QueryAdapter,
     private model: M,

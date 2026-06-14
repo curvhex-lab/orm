@@ -1,4 +1,4 @@
-# Vertex ORM
+# Curvhex ORM
 
 TypeScript ORM for Solana PDA accounts. Query, filter, and aggregate on-chain data with a familiar API — inspired by Prisma, built for Solana.
 
@@ -21,14 +21,14 @@ Solana stores program state in accounts (PDAs). Querying them is painful:
 - Every project reimplements the same deserialization + filtering boilerplate
 - Switching from a public RPC to an indexer (Helius, your own Postgres) requires rewriting query logic
 
-Vertex ORM solves this with a single, adapter-agnostic query API.
+Curvhex ORM solves this with a single, adapter-agnostic query API.
 
 ---
 
 ## How It Works
 
 ```
-Your Code  →  VertexORM  →  QueryAdapter  →  Data Source
+Your Code  →  CurvhexORM  →  QueryAdapter  →  Data Source
                                 ├── RpcAdapter       (getProgramAccounts)
                                 ├── HeliusAdapter    (DAS API)        [soon]
                                 └── PostgresAdapter  (your indexer)   [soon]
@@ -41,7 +41,7 @@ Define your schema once. Write queries once. Swap the adapter as your needs grow
 ## Installation
 
 ```bash
-npm install vertex-orm @solana/web3.js
+npm install curvhex-orm @solana/web3.js
 ```
 
 ---
@@ -51,7 +51,7 @@ npm install vertex-orm @solana/web3.js
 ### 1. Define your schema
 
 ```typescript
-import { defineModel, anchor } from 'vertex-orm'
+import { defineModel, anchor } from 'curvhex-orm'
 
 const UserAccount = defineModel({
   // Anchor programs: use anchor() helper
@@ -75,12 +75,12 @@ Field offsets are calculated automatically from the discriminator length and fie
 ### 2. Create the ORM
 
 ```typescript
-import { VertexORM, RpcAdapter } from 'vertex-orm'
+import { CurvhexORM, RpcAdapter } from 'curvhex-orm'
 import { Connection, PublicKey } from '@solana/web3.js'
 
 const connection = new Connection('https://api.mainnet-beta.solana.com')
 
-const orm = new VertexORM({
+const orm = new CurvhexORM({
   connection,
   programId: 'YOUR_PROGRAM_ID',
   models: { UserAccount },
@@ -145,7 +145,7 @@ const MyAccount = defineModel({
 Computes the 8-byte Anchor discriminator for an account name.
 
 ```typescript
-import { anchor } from 'vertex-orm'
+import { anchor } from 'curvhex-orm'
 
 anchor('UserAccount') // → [149, 88, 201, ...]
 ```
@@ -276,9 +276,9 @@ The query API is adapter-agnostic. Swap the data source without changing your qu
 Works with any Solana RPC endpoint. No setup required.
 
 ```typescript
-import { VertexORM, RpcAdapter } from 'vertex-orm'
+import { CurvhexORM, RpcAdapter } from 'curvhex-orm'
 
-const orm = new VertexORM({
+const orm = new CurvhexORM({
   connection,
   programId: 'YOUR_PROGRAM_ID',
   models:    { UserAccount },
@@ -293,9 +293,9 @@ const orm = new VertexORM({
 Uses the Helius DAS API. Faster, higher rate limits, better support for large programs.
 
 ```typescript
-import { HeliusAdapter } from 'vertex-orm/adapters'
+import { HeliusAdapter } from 'curvhex-orm/adapters'
 
-const orm = new VertexORM({
+const orm = new CurvhexORM({
   connection,
   programId: 'YOUR_PROGRAM_ID',
   models:    { UserAccount },
@@ -308,9 +308,9 @@ const orm = new VertexORM({
 Query your own Geyser-indexed database. Enables true range queries, sorting, and aggregation at the database level.
 
 ```typescript
-import { PostgresAdapter } from 'vertex-orm/adapters'
+import { PostgresAdapter } from 'curvhex-orm/adapters'
 
-const orm = new VertexORM({
+const orm = new CurvhexORM({
   connection,
   programId: 'YOUR_PROGRAM_ID',
   models:    { UserAccount },
@@ -329,7 +329,7 @@ const orm = new VertexORM({
 
 Solana's native RPC (`getProgramAccounts`) only supports exact byte matching. Range queries, sorting, and aggregation require off-chain infrastructure.
 
-Rather than picking one solution, Vertex ORM abstracts the data source:
+Rather than picking one solution, Curvhex ORM abstracts the data source:
 
 ```
 findMany({ where: { balance: { gt: 100n } } })
@@ -387,8 +387,8 @@ Contributions are welcome. Here's how to get started:
 ### Setup
 
 ```bash
-git clone https://github.com/your-username/vertex-orm
-cd vertex-orm
+git clone https://github.com/your-username/curvhex-orm
+cd curvhex-orm
 npm install
 ```
 
@@ -406,8 +406,8 @@ src/
 │   │   └── QueryAdapter.ts   — adapter interface
 │   └── RpcAdapter.ts         — getProgramAccounts implementation
 ├── client/
-│   ├── VertexClient.ts   — findMany, findFirst, aggregate, groupBy, include
-│   └── VertexORM.ts      — entry point, wires models to adapter
+│   ├── CurvhexClient.ts   — findMany, findFirst, aggregate, groupBy, include
+│   └── CurvhexORM.ts      — entry point, wires models to adapter
 └── __tests__/
     └── integration.test.ts
 ```

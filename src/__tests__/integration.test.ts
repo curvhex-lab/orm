@@ -1,8 +1,8 @@
 import { Connection, PublicKey } from '@solana/web3.js';
 import { defineModel } from '../core/schema';
 import { anchor } from '../core/schema';
-import { VertexORM } from '../client/VertexORM';
-import { VertexClient } from '../client/VertexClient';
+import { CurvhexORM } from '../client/CurvhexORM';
+import { CurvhexClient } from '../client/CurvhexClient';
 import { RpcAdapter } from '../adapters/RpcAdapter';
 import type { QueryAdapter } from '../adapters/abstract/QueryAdapter';
 
@@ -83,7 +83,7 @@ async function run(name: string, fn: () => Promise<void>) {
 async function main() {
   const connection = new Connection('https://api.devnet.solana.com', 'confirmed');
   const adapter    = new RpcAdapter(connection, new PublicKey(TOKEN_PROGRAM_ID));
-  const orm        = new VertexORM({
+  const orm        = new CurvhexORM({
     connection,
     programId: TOKEN_PROGRAM_ID,
     adapter,
@@ -117,7 +117,7 @@ async function main() {
       { address: 'a1', mint: 'x', owner: 'alice', amount: 500n, state: 1 },
       { address: 'a2', mint: 'x', owner: 'bob',   amount: 300n, state: 1 },
     ];
-    const client = new VertexClient(mockAdapter(fakeRecords), TokenAccount);
+    const client = new CurvhexClient(mockAdapter(fakeRecords), TokenAccount);
     const first  = await client.findFirst({ where: { owner: 'alice' } });
     console.log('findFirst sonucu:', first);
     if (first?.owner !== 'alice') throw new Error('yanlış kayıt döndü');
@@ -143,7 +143,7 @@ async function main() {
       },
     } as QueryAdapter;
 
-    const client  = new VertexClient(adapter, TokenAccount);
+    const client  = new CurvhexClient(adapter, TokenAccount);
     const results = await client.findMany({
       where:   { owner: 'alice' },
       orderBy: { amount: 'desc' },
@@ -160,7 +160,7 @@ async function main() {
       { address: 'a2', owner: 'bob',   amount: 200n, state: 1 },
       { address: 'a3', owner: 'alice', amount: 300n, state: 0 },
     ];
-    const client = new VertexClient(mockAdapter(fakeRecords), TokenAccount);
+    const client = new CurvhexClient(mockAdapter(fakeRecords), TokenAccount);
     const total  = await client.count();
     console.log('count:', total);
     if (total !== 3) throw new Error(`beklenen 3, gelen ${total}`);
@@ -173,7 +173,7 @@ async function main() {
       { address: 'a2', owner: 'bob',   amount: 300n, state: 1 },
       { address: 'a3', owner: 'carol', amount: 200n, state: 0 },
     ];
-    const client = new VertexClient(mockAdapter(fakeRecords), TokenAccount);
+    const client = new CurvhexClient(mockAdapter(fakeRecords), TokenAccount);
     const agg    = await client.aggregate({
       _count: true,
       _sum:   { amount: true },
@@ -194,7 +194,7 @@ async function main() {
       { address: 'a2', owner: 'bob',   amount: 300n, state: 1 },
       { address: 'a3', owner: 'alice', amount: 200n, state: 0 },
     ];
-    const client  = new VertexClient(mockAdapter(fakeRecords), TokenAccount);
+    const client  = new CurvhexClient(mockAdapter(fakeRecords), TokenAccount);
     const grouped = await client.groupBy({
       by:    ['owner'],
       _count: true,
@@ -229,7 +229,7 @@ async function main() {
       findByPda: async () => null,
     } as QueryAdapter;
 
-    const client  = new VertexClient(adapter, VaultAccount);
+    const client  = new CurvhexClient(adapter, VaultAccount);
     const results = await client.findMany({
       include: {
         owner: { model: UserAccount, foreignKey: 'ownerPubkey' }
