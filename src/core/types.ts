@@ -9,6 +9,7 @@ export type FieldType =
 export interface FieldDefinition {
     type: FieldType;
     offset: number;
+    maxLen?: number;
 }
 
 

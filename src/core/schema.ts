@@ -21,7 +21,7 @@ const FIELD_SIZES: Record<FieldType, number> = {
     bytes: 0,
 };
 
-type FieldInput = { type: FieldType };
+type FieldInput = { type: FieldType; maxLen?: number };
 type ModelInput = {
     discriminator: number[];
     fields: Record<string, FieldInput>;
@@ -32,11 +32,21 @@ export function defineModel<T extends ModelInput>(input: T): ModelDefinition {
     let offset = input.discriminator.length;
 
     for (const [name, field] of Object.entries(input.fields)) {
-        const size = FIELD_SIZES[field.type];
+        const baseSize = FIELD_SIZES[field.type];
 
-        fields[name] = { type: field.type, offset };
+        fields[name] = { type: field.type, offset, maxLen: field.maxLen };
 
-        offset += size === 0 ? 4 : size;
+        if (baseSize === 0) {
+            // variable-length: 4-byte length prefix + maxLen payload
+            if (field.maxLen === undefined) {
+                throw new Error(
+                    `Field "${name}" is type "${field.type}" — provide maxLen so offsets can be calculated correctly.`
+                );
+            }
+            offset += 4 + field.maxLen;
+        } else {
+            offset += baseSize;
+        }
     }
 
     return { discriminator: input.discriminator, fields };
