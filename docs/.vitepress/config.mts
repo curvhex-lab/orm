@@ -2,6 +2,7 @@ import { defineConfig } from 'vitepress'
 
 const enNav = [
   { text: 'Guide', link: '/guide/introduction' },
+  { text: 'Examples', link: '/examples/solana-task-board' },
   { text: 'API Reference', link: '/api/define-model' },
   { text: 'Roadmap', link: '/guide/roadmap' },
   { text: 'Team', link: '/team' },
@@ -16,6 +17,7 @@ const enNav = [
 
 const trNav = [
   { text: 'Rehber', link: '/tr/guide/introduction' },
+  { text: 'Örnekler', link: '/tr/examples/solana-task-board' },
   { text: 'API Referansı', link: '/tr/api/define-model' },
   { text: 'Yol Haritası', link: '/tr/guide/roadmap' },
   { text: 'Ekip', link: '/tr/team' },
@@ -72,6 +74,12 @@ const enSidebar = [
     ],
   },
   {
+    text: 'Examples',
+    items: [
+      { text: 'Solana Task Board', link: '/examples/solana-task-board' },
+    ],
+  },
+  {
     text: 'Contributing',
     items: [
       { text: 'Architecture', link: '/guide/architecture' },
@@ -122,6 +130,12 @@ const trSidebar = [
       { text: 'aggregate', link: '/tr/api/aggregate' },
       { text: 'groupBy', link: '/tr/api/group-by' },
       { text: 'Alan Türleri', link: '/tr/api/field-types' },
+    ],
+  },
+  {
+    text: 'Örnekler',
+    items: [
+      { text: 'Solana Görev Panosu', link: '/tr/examples/solana-task-board' },
     ],
   },
   {
